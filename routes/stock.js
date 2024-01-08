@@ -11,6 +11,7 @@ const {
   fetchAllStock,
   stockDelete,
   findAverageCost,
+  updateStock,
 } = require("../controllers/stockController");
 const router = express.Router();
 
@@ -18,6 +19,7 @@ const router = express.Router();
 router.post("/add-stock/:productId", addStock);
 
 router.get("/fetch-allStocks", fetchAllStock);
+router.put("/update-stock/:stockId", updateStock);
 
 router.delete("/delete-stock/:stockId", stockDelete);
 
