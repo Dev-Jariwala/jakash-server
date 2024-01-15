@@ -1,11 +1,5 @@
 const express = require("express");
-const {
-  productCreate,
-  fetchAllProducts,
-  productUpdate,
-  productDelete,
-  fetchProductDetails,
-} = require("../controllers/productControllers");
+
 const {
   retailBIllCreate,
   fetchAllRetailBIll,
@@ -21,11 +15,5 @@ router.get("/fetch-allRetailbills", fetchAllRetailBIll);
 
 // Update Retail BIll
 router.put("/update-retailbill/:retailBillId", updateRetailBill);
-
-// Delete Retail Bill
-router.delete("/delete-retailbill/:retailbillId", productDelete);
-
-// fetch Retail Bill Details
-router.get("/fetch-productDetails/:productId", fetchProductDetails);
 
 module.exports = router;

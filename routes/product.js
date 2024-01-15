@@ -9,18 +9,18 @@ const {
 const router = express.Router();
 
 // Create Course Route with a single image
-router.post("/create-product", productCreate);
+router.post("/", productCreate);
 
 // Fetch All courses Route
-router.get("/fetch-allProducts", fetchAllProducts);
+router.get("/", fetchAllProducts);
 
 // Update course Route
-router.put("/update-product/:productId", productUpdate);
+router.put("/:productId", productUpdate);
 
 // Delete course Route
-router.delete("/delete-product/:productId", productDelete);
+router.delete("/:productId", productDelete);
 
 // fetch course details route
-router.get("/fetch-productDetails/:productId", fetchProductDetails);
+router.get("/:productId", fetchProductDetails);
 
 module.exports = router;
