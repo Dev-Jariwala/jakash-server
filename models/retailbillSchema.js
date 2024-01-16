@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 
 const retailBillSchema = new mongoose.Schema({
-  BillNo: {
-    type: Number,
-    unique: true,
+  collectionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Collection",
   },
   orderDate: {
     type: Date,

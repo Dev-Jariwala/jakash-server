@@ -22,6 +22,7 @@ exports.productCreate = async (req, res) => {
     }
     // Creating a new product
     const newProduct = new Product({
+      collectionId: activeCollection._id,
       productName,
       retailPrice,
       wholesalePrice,
@@ -29,10 +30,9 @@ exports.productCreate = async (req, res) => {
       totalStock: 0,
     });
 
-    // Add the new product to the active collection's products array
-    activeCollection.products.push(newProduct);
-
-    // Save the active collection
+    await newProduct.save();
+    // Store only the productId in the products array of the active collection
+    activeCollection.products.push(newProduct._id);
     await activeCollection.save();
     res.status(200).json({ message: "Product Created Successfully." });
   } catch (error) {
@@ -41,21 +41,26 @@ exports.productCreate = async (req, res) => {
   }
 };
 
-// Fetch All products
 exports.fetchAllProducts = async (req, res) => {
   try {
-    // Fetch the active collection
     const activeCollection = await getActiveCollection();
     if (!activeCollection) {
-      res.status(400).json({ message: "no active collection" });
+      return res.status(400).json({ message: "No active collection" });
     }
-    res.status(200).json({ products: activeCollection.products });
+
+    // Populate the product details using the Product model
+    const populatedProducts = await Product.find({
+      _id: { $in: activeCollection.products },
+    });
+    console.log(populatedProducts);
+
+    res.status(200).json({ products: populatedProducts });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching products" });
   }
 };
-// Update product
+
 exports.productUpdate = async (req, res) => {
   const { productId } = req.params;
   const { productName, retailPrice, wholesalePrice } = req.body;
@@ -63,26 +68,25 @@ exports.productUpdate = async (req, res) => {
   try {
     const activeCollection = await getActiveCollection();
 
-    // Find the product within the active collection
-    const productIndex = activeCollection.products.findIndex(
-      (product) => product._id.toString() === productId
-    );
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
 
-    if (productIndex !== -1) {
-      // Update the product within the active collection using findByIdAndUpdate
-      await CollectionModel.findByIdAndUpdate(
-        activeCollection._id,
+    if (activeCollection.products.includes(productId)) {
+      // Use $set for updating specific fields
+      const updatedProduct = await Product.findByIdAndUpdate(
+        productId,
         {
           $set: {
-            [`products.${productIndex}.productName`]: productName,
-            [`products.${productIndex}.retailPrice`]: retailPrice,
-            [`products.${productIndex}.wholesalePrice`]: wholesalePrice,
+            productName,
+            retailPrice,
+            wholesalePrice,
           },
         },
         { new: true }
-      );
+      ).lean(); // Use lean for a plain JavaScript object instead of Mongoose document
 
-      res.json({ message: "Product updated successfully." });
+      res.json({ message: "Product updated successfully.", updatedProduct });
     } else {
       res
         .status(404)
@@ -94,41 +98,62 @@ exports.productUpdate = async (req, res) => {
   }
 };
 
-// Delete product
 exports.productDelete = async (req, res) => {
   const { productId } = req.params;
 
   try {
     const activeCollection = await getActiveCollection();
 
-    // Remove the product from the active collection's products array
-    activeCollection.products = activeCollection.products.filter(
-      (product) => product._id.toString() !== productId
-    );
+    // Check if the active collection exists
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
 
-    await activeCollection.save();
+    // Check if the product exists in the active collection
+    if (activeCollection.products.includes(productId)) {
+      // Remove the product from the active collection's products array
+      activeCollection.products = activeCollection.products.filter(
+        (product) => product.toString() !== productId
+      );
 
-    res.status(200).json({ message: "Product deleted successfully." });
+      await activeCollection.save();
+
+      // Delete the actual product document from the Product model
+      await Product.findByIdAndDelete(productId);
+
+      res.status(200).json({ message: "Product deleted successfully." });
+    } else {
+      res
+        .status(404)
+        .json({ message: "Product not found in the active collection." });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error deleting product" });
   }
 };
 
-// Fetch Product-Details
 exports.fetchProductDetails = async (req, res) => {
   const { productId } = req.params;
 
   try {
     const activeCollection = await getActiveCollection();
 
-    // Find the product within the active collection
-    const productDetails = activeCollection.products.find(
-      (product) => product._id.toString() === productId
-    );
+    // Check if the active collection exists
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
 
-    if (productDetails) {
-      res.status(200).json({ productDetails });
+    // Check if the product exists in the active collection
+    if (activeCollection.products.includes(productId)) {
+      // Fetch complete product details using the Product model
+      const productDetails = await Product.findById(productId);
+
+      if (productDetails) {
+        res.status(200).json({ productDetails });
+      } else {
+        res.status(404).json({ message: "Product not found." });
+      }
     } else {
       res
         .status(404)

@@ -10,10 +10,12 @@ const collectionSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  products: [Object],
-  retailBills: [Object],
-  stocks: [Object],
-  wholeSaleBills: [Object],
+  products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+  retailBills: [{ type: mongoose.Schema.Types.ObjectId, ref: "RetailBill" }],
+  stocks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Stock" }],
+  wholeSaleBills: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "WholeSaleBill" },
+  ],
 });
 
 const CollectionModel = mongoose.model("Collection", collectionSchema);

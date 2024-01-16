@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 
 const stockSchema = new mongoose.Schema({
+  collectionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Collection",
+  },
   productId: String,
   productName: String,
   addStock: Number,

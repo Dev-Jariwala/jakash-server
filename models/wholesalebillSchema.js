@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 
 const wholeSaleBillSchema = new mongoose.Schema({
+  collectionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Collection",
+  },
   BillNo: {
     type: Number,
     unique: true,

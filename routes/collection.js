@@ -1,16 +1,13 @@
 const express = require("express");
-const {
-  productCreate,
-  fetchAllProducts,
-  productUpdate,
-  productDelete,
-  fetchProductDetails,
-} = require("../controllers/productControllers");
+
 const {
   getAllCollections,
   createCollection,
   setActiveCollection,
   getActiveCollection,
+  getCollectionDetails,
+  collectionDelete,
+  collectionUpdate,
 } = require("../controllers/collectionController");
 const router = express.Router();
 
@@ -19,11 +16,15 @@ router.post("/", createCollection);
 
 // Fetch All courses Route
 router.get("/", getAllCollections);
+router.get("/:collectionId", getCollectionDetails);
+router.get("/active", getActiveCollection);
 
 // Update course Route
 router.put("/:collectionId", setActiveCollection);
+router.put("/update/:collectionId", collectionUpdate);
 
 // fetch course details route
-router.get("/active", getActiveCollection);
+
+router.delete("/:collectionId", collectionDelete);
 
 module.exports = router;
