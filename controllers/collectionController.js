@@ -1,5 +1,6 @@
 const CollectionModel = require("../models/collectionSchema");
 const Product = require("../models/productSchema");
+const Stock = require("../models/stockSchema");
 
 exports.createCollection = async (req, res) => {
   const { collectionName, addProducts } = req.body;
@@ -113,12 +114,12 @@ exports.collectionDelete = async (req, res) => {
     const existingCollection = await CollectionModel.findById(collectionId);
     if (!existingCollection)
       res.status(404).json({ message: "Collection Not Found." });
-    console.log(existingCollection.active);
     if (existingCollection.active) {
       res.status(200).json({ message: "Active collection cannot be deleted." });
     } else {
       // Find and delete all products associated with this collection
       await Product.deleteMany({ collectionId });
+      await Stock.deleteMany({ collectionId });
 
       // Delete the collection
       await CollectionModel.findByIdAndDelete(collectionId);

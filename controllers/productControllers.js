@@ -52,7 +52,6 @@ exports.fetchAllProducts = async (req, res) => {
     const populatedProducts = await Product.find({
       _id: { $in: activeCollection.products },
     });
-    console.log(populatedProducts);
 
     res.status(200).json({ products: populatedProducts });
   } catch (error) {
