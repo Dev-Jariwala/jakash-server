@@ -2,11 +2,11 @@ const CollectionModel = require("../models/collectionSchema");
 const Product = require("../models/productSchema");
 const Stock = require("../models/stockSchema");
 
+// Create a new collection with empty arrays
 exports.createCollection = async (req, res) => {
-  const { collectionName, addProducts } = req.body;
+  const { collectionName } = req.body;
 
   try {
-    // Creating a new collection with empty arrays
     const newCollection = new CollectionModel({
       collectionName,
       products: [],
@@ -16,33 +16,29 @@ exports.createCollection = async (req, res) => {
     });
 
     await newCollection.save();
-    res.status(200).json({ message: "Collection Created Successfully." });
+    res.status(201).json({ message: "Collection created successfully." });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error creating Collection" });
+    res.status(500).json({ message: "Error creating collection." });
   }
 };
 
+// Set a collection as active
 exports.setActiveCollection = async (req, res) => {
   const { collectionId } = req.params;
 
   try {
-    // Find the current active collection (if any)
     const currentActiveCollection = await CollectionModel.findOne({
       active: true,
     });
-
-    // Find the collection to be set as active
     const newActiveCollection = await CollectionModel.findById(collectionId);
 
     if (newActiveCollection) {
-      // If there is a currently active collection, deactivate it
       if (currentActiveCollection) {
         currentActiveCollection.active = false;
         await currentActiveCollection.save();
       }
 
-      // Set the new collection as active
       newActiveCollection.active = true;
       await newActiveCollection.save();
 
@@ -57,9 +53,12 @@ exports.setActiveCollection = async (req, res) => {
     res.status(500).json({ message: "Error setting active collection." });
   }
 };
+
+// Get the details of the active collection
 exports.getActiveCollection = async (req, res) => {
   try {
     const activeCollection = await CollectionModel.findOne({ active: true });
+
     if (activeCollection) {
       res.status(200).json({ activeCollection });
     } else {
@@ -70,15 +69,18 @@ exports.getActiveCollection = async (req, res) => {
     res.status(500).json({ message: "Error fetching active collection." });
   }
 };
+
+// Get details of a specific collection by ID
 exports.getCollectionDetails = async (req, res) => {
   const { collectionId } = req.params;
+
   try {
     const collectionDetails = await CollectionModel.findById(collectionId);
 
     if (collectionDetails) {
       res.status(200).json({ collectionDetails });
     } else {
-      res.status(404).json({ message: "No collection found." });
+      res.status(404).json({ message: "Collection not found." });
     }
   } catch (error) {
     console.error(error);
@@ -86,19 +88,18 @@ exports.getCollectionDetails = async (req, res) => {
   }
 };
 
+// Get all collections with sanitized data
 exports.getAllCollections = async (req, res) => {
   try {
     const allCollections = await CollectionModel.find();
-    const senitizedCollections = allCollections.map((coll) => {
-      return {
-        _id: coll._id,
-        collectionName: coll.collectionName,
-        active: coll.active,
-      };
-    });
+    const sanitizedCollections = allCollections.map((coll) => ({
+      _id: coll._id,
+      collectionName: coll.collectionName,
+      active: coll.active,
+    }));
 
-    if (senitizedCollections.length > 0) {
-      res.status(200).json({ senitizedCollections });
+    if (sanitizedCollections.length > 0) {
+      res.status(200).json({ sanitizedCollections });
     } else {
       res.status(404).json({ message: "No collections found." });
     }
@@ -107,17 +108,20 @@ exports.getAllCollections = async (req, res) => {
     res.status(500).json({ message: "Error fetching collections." });
   }
 };
+
+// Delete a collection and associated products and stocks
 exports.collectionDelete = async (req, res) => {
   const { collectionId } = req.params;
 
   try {
     const existingCollection = await CollectionModel.findById(collectionId);
-    if (!existingCollection)
-      res.status(404).json({ message: "Collection Not Found." });
-    if (existingCollection.active) {
-      res.status(200).json({ message: "Active collection cannot be deleted." });
+
+    if (!existingCollection) {
+      res.status(404).json({ message: "Collection not found." });
+    } else if (existingCollection.active) {
+      res.status(400).json({ message: "Active collection cannot be deleted." });
     } else {
-      // Find and delete all products associated with this collection
+      // Delete associated products and stocks
       await Product.deleteMany({ collectionId });
       await Stock.deleteMany({ collectionId });
 
@@ -128,30 +132,34 @@ exports.collectionDelete = async (req, res) => {
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error deleting collection" });
+    res.status(500).json({ message: "Error deleting collection." });
   }
 };
+
+// Update collection details by ID
 exports.collectionUpdate = async (req, res) => {
   const { collectionId } = req.params;
   const { collectionName } = req.body;
-  try {
-    const existingCollection = CollectionModel.findById(collectionId);
-    if (!existingCollection)
-      res.status(404).json({ message: "Collection Not Found." });
 
-    // Use $set for updating specific fields
-    const updatedCollection = await CollectionModel.findByIdAndUpdate(
-      collectionId,
-      {
-        $set: {
-          collectionName,
+  try {
+    const existingCollection = await CollectionModel.findById(collectionId);
+
+    if (!existingCollection) {
+      res.status(404).json({ message: "Collection not found." });
+    } else {
+      // Use $set for updating specific fields
+      const updatedCollection = await CollectionModel.findByIdAndUpdate(
+        collectionId,
+        {
+          $set: { collectionName },
         },
-      },
-      { new: true }
-    );
-    res.status(200).json({ message: "Collection updated successfully." });
+        { new: true }
+      );
+
+      res.status(200).json({ message: "Collection updated successfully." });
+    }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error updating collection" });
+    res.status(500).json({ message: "Error updating collection." });
   }
 };

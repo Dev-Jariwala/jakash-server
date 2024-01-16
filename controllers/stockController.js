@@ -1,6 +1,7 @@
 const Product = require("../models/productSchema");
 const Stock = require("../models/stockSchema");
 const CollectionModel = require("../models/collectionSchema");
+
 // Helper function to get the active collection
 const getActiveCollection = async () => {
   try {
@@ -11,6 +12,7 @@ const getActiveCollection = async () => {
     throw new Error("Error fetching active collection");
   }
 };
+
 // Add Stock
 exports.addStock = async (req, res) => {
   const { productId } = req.params;
@@ -18,13 +20,16 @@ exports.addStock = async (req, res) => {
 
   try {
     const product = await Product.findById(productId);
+
     // Fetch the active collection
     const activeCollection = await getActiveCollection();
+
     if (!activeCollection) {
-      res.status(400).json({ message: "no active collection" });
+      return res.status(400).json({ message: "No active collection" });
     }
+
     if (product) {
-      const currentStock = product.stock || 0; // Get current stock value or default to 0 if undefined
+      const currentStock = product.stock || 0;
       const totalStock = product.totalStock + addStock || 0;
       const updatedStock = currentStock + addStock;
 
@@ -38,7 +43,8 @@ exports.addStock = async (req, res) => {
         },
         { new: true }
       );
-      // adding stock
+
+      // Add new stock entry
       const addNewStock = new Stock({
         collectionId: activeCollection._id,
         productId,
@@ -48,53 +54,57 @@ exports.addStock = async (req, res) => {
       });
 
       await addNewStock.save();
-      // Store only the productId in the products array of the active collection
+
+      // Store only the stockId in the stocks array of the active collection
       activeCollection.stocks.push(addNewStock._id);
       await activeCollection.save();
 
       res
         .status(200)
-        .json({ message: "Stock added Successfully.", updatedProduct });
+        .json({ message: "Stock added successfully.", updatedProduct });
     } else {
-      res.status(401).json({ message: "Product Not Found" });
+      res.status(401).json({ message: "Product not found" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error Adding Stock" });
+    res.status(500).json({ message: "Error adding stock" });
   }
 };
 
-// Fetch All Stock added
+// Fetch all stock entries
 exports.fetchAllStock = async (req, res) => {
   try {
     const activeCollection = await getActiveCollection();
+
     if (!activeCollection) {
       return res.status(400).json({ message: "No active collection" });
     }
+
     // Populate the stock details using the Stock model
     const populatedStocks = await Stock.find({
       _id: { $in: activeCollection.stocks },
     });
+
     res.status(200).json({ stocks: populatedStocks });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching stocks" });
   }
 };
+
+// Fetch details of a stock entry by ID
 exports.fetchStockDetails = async (req, res) => {
   const { stockId } = req.params;
 
   try {
     const activeCollection = await getActiveCollection();
 
-    // Check if the active collection exists
     if (!activeCollection) {
       return res.status(400).json({ message: "No active collection" });
     }
 
-    // Check if the product exists in the active collection
     if (activeCollection.stocks.includes(stockId)) {
-      // Fetch complete product details using the Product model
+      // Fetch complete stock details using the Stock model
       const stockDetails = await Stock.findById(stockId);
 
       if (stockDetails) {
@@ -109,9 +119,11 @@ exports.fetchStockDetails = async (req, res) => {
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error fetching ctock details" });
+    res.status(500).json({ message: "Error fetching stock details" });
   }
 };
+
+// Update stock entry by ID
 exports.updateStock = async (req, res) => {
   const { stockId } = req.params;
   const { addStock, date } = req.body;
@@ -156,10 +168,10 @@ exports.updateStock = async (req, res) => {
             updateStock,
           });
         } else {
-          res.status(401).json({ message: "Product Not Found" });
+          res.status(401).json({ message: "Product not found" });
         }
       } else {
-        res.status(401).json({ message: "Stock Not Found" });
+        res.status(401).json({ message: "Stock not found" });
       }
     } else {
       res
@@ -168,22 +180,21 @@ exports.updateStock = async (req, res) => {
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error updating Stock" });
+    res.status(500).json({ message: "Error updating stock" });
   }
 };
 
-// Delete added stock
+// Delete stock entry by ID
 exports.stockDelete = async (req, res) => {
   const { stockId } = req.params;
+
   try {
     const activeCollection = await getActiveCollection();
 
-    // Check if the active collection exists
     if (!activeCollection) {
       return res.status(400).json({ message: "No active collection" });
     }
 
-    // Check if the product exists in the active collection
     if (activeCollection.stocks.includes(stockId)) {
       const stock = await Stock.findById(stockId);
 
@@ -212,15 +223,17 @@ exports.stockDelete = async (req, res) => {
             { new: true }
           );
 
-          // Delete the added stock
+          // Delete the stock entry
           await Stock.findByIdAndDelete(stockId);
 
-          res.status(200).json({ message: "Stock Deleted" });
+          res.status(200).json({ message: "Stock deleted successfully." });
         } else {
-          res.status(400).json({ message: "Product Not Found" });
+          // Delete the stock entry
+          await Stock.findByIdAndDelete(stockId);
+          res.status(401).json({ message: "Product not found" });
         }
       } else {
-        res.status(400).json({ message: "Stock Not Found" });
+        res.status(400).json({ message: "Stock not found" });
       }
     } else {
       res
