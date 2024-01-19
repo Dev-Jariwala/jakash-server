@@ -1,6 +1,16 @@
 const Product = require("../models/productSchema");
 const RetailBill = require("../models/retailbillSchema");
-
+const CollectionModel = require("../models/collectionSchema");
+// Helper function to get the active collection
+const getActiveCollection = async () => {
+  try {
+    const activeCollection = await CollectionModel.findOne({ active: true });
+    return activeCollection;
+  } catch (error) {
+    console.error(error);
+    throw new Error("Error fetching active collection");
+  }
+};
 // Create Retail Bill
 exports.retailBIllCreate = async (req, res) => {
   const {
@@ -19,9 +29,17 @@ exports.retailBIllCreate = async (req, res) => {
   } = req.body;
 
   try {
+    console.log(BillNo);
+    // Fetch the active collection
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
     const filteredProducts = products.filter((product) => product.quantity > 0);
     // Creating a new retail bill
     const newRetailBill = new RetailBill({
+      collectionId: activeCollection._id,
       BillNo,
       orderDate,
       name,
@@ -53,7 +71,10 @@ exports.retailBIllCreate = async (req, res) => {
     }
 
     await newRetailBill.save();
-    res.status(200).json({ message: "Retail Bill Created Successfully." });
+    // Store only the productId in the products array of the active collection
+    activeCollection.retailBills.push(newRetailBill._id);
+    await activeCollection.save();
+    res.status(200).json({ message: "RetailBill created successfully." });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error creating Retail Bill" });
@@ -63,8 +84,17 @@ exports.retailBIllCreate = async (req, res) => {
 // Fetch All Retail Bill
 exports.fetchAllRetailBIll = async (req, res) => {
   try {
-    const retailBills = await RetailBill.find({});
-    res.status(200).json({ retailBills });
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
+    // Populate the product details using the Product model
+    const populatedRetailBills = await RetailBill.find({
+      _id: { $in: activeCollection.retailBills },
+    });
+
+    res.status(200).json({ retailBills: populatedRetailBills });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching retailBills" });
@@ -76,6 +106,17 @@ exports.updateRetailBill = async (req, res) => {
   const updatedBillData = req.body;
   // console.log(retailBillId);
   try {
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
+
+    if (!activeCollection.retailBills.includes(retailBillId)) {
+      return res
+        .status(404)
+        .json({ message: "Retail Bill not found in the active collection." });
+    }
     const existingRetailBill = await RetailBill.findById(String(retailBillId));
 
     if (!existingRetailBill) {

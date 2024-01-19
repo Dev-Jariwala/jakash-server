@@ -8,12 +8,12 @@ const {
 const router = express.Router();
 
 // Create Retail Bill
-router.post("/create-retailbill", retailBIllCreate);
+router.post("/", retailBIllCreate);
 
 // Fetch All Retail BIll
-router.get("/fetch-allRetailbills", fetchAllRetailBIll);
+router.get("/", fetchAllRetailBIll);
 
 // Update Retail BIll
-router.put("/update-retailbill/:retailBillId", updateRetailBill);
+router.put("/:retailBillId", updateRetailBill);
 
 module.exports = router;

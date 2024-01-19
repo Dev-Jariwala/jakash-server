@@ -5,6 +5,10 @@ const retailBillSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Collection",
   },
+  BillNo: {
+    type: Number,
+    unique: true,
+  },
   orderDate: {
     type: Date,
     default: Date.now,
