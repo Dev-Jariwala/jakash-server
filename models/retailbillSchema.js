@@ -5,6 +5,10 @@ const retailBillSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Collection",
   },
+  clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Client",
+  },
   BillNo: {
     type: Number,
     unique: true,

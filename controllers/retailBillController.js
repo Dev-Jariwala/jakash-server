@@ -1,6 +1,7 @@
 const Product = require("../models/productSchema");
 const RetailBill = require("../models/retailbillSchema");
 const CollectionModel = require("../models/collectionSchema");
+const Client = require("../models/clientSchema");
 // Helper function to get the active collection
 const getActiveCollection = async () => {
   try {
@@ -36,10 +37,24 @@ exports.retailBIllCreate = async (req, res) => {
     if (!activeCollection) {
       return res.status(400).json({ message: "No active collection" });
     }
+    // Check if a client with the given mobile number already exists
+    let client = await Client.findOne({ mobileNumber });
+    // If client not found, create a new one
+    if (!client) {
+      client = new Client({
+        collectionId: activeCollection._id, // Set your desired value
+        mobileNumber,
+        name,
+        address,
+      });
+
+      await client.save();
+    }
     const filteredProducts = products.filter((product) => product.quantity > 0);
     // Creating a new retail bill
     const newRetailBill = new RetailBill({
       collectionId: activeCollection._id,
+      clientId: client._id,
       BillNo,
       orderDate,
       name,
@@ -74,6 +89,9 @@ exports.retailBIllCreate = async (req, res) => {
     // Store only the productId in the products array of the active collection
     activeCollection.retailBills.push(newRetailBill._id);
     await activeCollection.save();
+    // Add newRetailBill._id to the retailBills array of the corresponding client
+    client.retailBills.push(newRetailBill._id);
+    await client.save();
     res.status(200).json({ message: "RetailBill created successfully." });
   } catch (error) {
     console.error(error);
@@ -122,7 +140,39 @@ exports.updateRetailBill = async (req, res) => {
     if (!existingRetailBill) {
       return res.status(404).json({ message: "Retail Bill not found" });
     }
+    if (existingRetailBill.mobileNumber !== updatedBillData.mobileNumber) {
+      // Check if a client with the given mobile number already exists
+      let client = await Client.findOne({
+        mobileNumber: updatedBillData.mobileNumber,
+      });
 
+      if (!client) {
+        client = new Client({
+          collectionId: activeCollection._id, // Set your desired value
+          mobileNumber: updatedBillData.mobileNumber,
+          name: updatedBillData.name,
+          address: updatedBillData.address,
+        });
+
+        await client.save();
+      }
+      // Add newRetailBill._id to the retailBills array of the corresponding client
+      client.retailBills.push(retailBillId);
+      await client.save();
+      updatedBillData.clientId = client._id;
+
+      // Check if a client with the given mobile number already exists
+      let wrongClient = await Client.findOne({
+        mobileNumber: existingRetailBill.mobileNumber,
+      });
+      if (wrongClient) {
+        // Remove retailBill id from the wrong client's retailBills array
+        wrongClient.retailBills = wrongClient.retailBills.filter(
+          (billId) => billId.toString() !== retailBillId
+        );
+        await wrongClient.save();
+      }
+    }
     const prevProducts = existingRetailBill.products;
     const newProducts = updatedBillData.products;
 

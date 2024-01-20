@@ -1,10 +1,9 @@
 const mongoose = require("mongoose");
 
 const clientSchema = new mongoose.Schema({
-  collectionName: {
-    type: String,
-    unique: true,
-    required: true,
+  collectionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Collection",
   },
   mobileNumber: {
     type: Number,
@@ -18,6 +17,6 @@ const clientSchema = new mongoose.Schema({
   ],
 });
 
-const Client = mongoose.model("Collection", clientSchema);
+const Client = mongoose.model("Client", clientSchema);
 
 module.exports = Client;
