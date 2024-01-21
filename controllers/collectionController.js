@@ -1,7 +1,8 @@
 const CollectionModel = require("../models/collectionSchema");
 const Product = require("../models/productSchema");
 const Stock = require("../models/stockSchema");
-
+const RetailBill = require("../models/retailbillSchema");
+const WholeSaleBill = require("../models/wholesalebillSchema");
 // Create a new collection with empty arrays
 exports.createCollection = async (req, res) => {
   const { collectionName } = req.body;
@@ -124,6 +125,8 @@ exports.collectionDelete = async (req, res) => {
       // Delete associated products and stocks
       await Product.deleteMany({ collectionId });
       await Stock.deleteMany({ collectionId });
+      await RetailBill.deleteMany({ collectionId });
+      await WholeSaleBill.deleteMany({ collectionId });
 
       // Delete the collection
       await CollectionModel.findByIdAndDelete(collectionId);

@@ -7,7 +7,6 @@ const wholeSaleBillSchema = new mongoose.Schema({
   },
   BillNo: {
     type: Number,
-    unique: true,
   },
   orderDate: {
     type: Date,

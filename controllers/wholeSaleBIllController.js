@@ -1,6 +1,17 @@
 const Product = require("../models/productSchema");
+const CollectionModel = require("../models/collectionSchema");
+const Client = require("../models/clientSchema");
 const WholeSaleBill = require("../models/wholesalebillSchema");
-
+// Helper function to get the active collection
+const getActiveCollection = async () => {
+  try {
+    const activeCollection = await CollectionModel.findOne({ active: true });
+    return activeCollection;
+  } catch (error) {
+    console.error(error);
+    throw new Error("Error fetching active collection");
+  }
+};
 // Create Retail Bill
 exports.wholeSaleBillCreate = async (req, res) => {
   const {
@@ -19,9 +30,30 @@ exports.wholeSaleBillCreate = async (req, res) => {
   } = req.body;
 
   try {
+    // Fetch the active collection
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
+    // Check if a client with the given mobile number already exists
+    let client = await Client.findOne({ mobileNumber });
+    // If client not found, create a new one
+    if (!client) {
+      client = new Client({
+        collectionId: activeCollection._id, // Set your desired value
+        mobileNumber,
+        name,
+        address,
+      });
+
+      await client.save();
+    }
     const filteredProducts = products.filter((product) => product.quantity > 0);
     // Creating a new retail bill
     const newWholeSaleBill = new WholeSaleBill({
+      collectionId: activeCollection._id,
+      clientId: client._id,
       BillNo,
       orderDate,
       name,
@@ -36,7 +68,7 @@ exports.wholeSaleBillCreate = async (req, res) => {
       totalDue,
     });
 
-    // Update product stock based on retail bill
+    // Update product stock based on wholesale bill
     for (const productItem of filteredProducts) {
       const { productId, quantity } = productItem;
       const product = await Product.findById(productId);
@@ -53,7 +85,13 @@ exports.wholeSaleBillCreate = async (req, res) => {
     }
 
     await newWholeSaleBill.save();
-    res.status(200).json({ message: "WholeSale Bill Created Successfully." });
+    // Store only the productId in the products array of the active collection
+    activeCollection.wholeSaleBills.push(newWholeSaleBill._id);
+    await activeCollection.save();
+    // Add newWholeSaleBill._id to the wholeSaleBills array of the corresponding client
+    client.wholeSaleBills.push(newWholeSaleBill._id);
+    await client.save();
+    res.status(200).json({ message: "WholeSaleBill created successfully." });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error creating WholeSale Bill" });
@@ -61,10 +99,19 @@ exports.wholeSaleBillCreate = async (req, res) => {
 };
 
 // Fetch All Retail Bill
-exports.fetchAllWholeSaleBill = async (req, res) => {
+exports.fetchAllWholeSaleBills = async (req, res) => {
   try {
-    const wholeSaleBills = await WholeSaleBill.find({});
-    res.status(200).json({ wholeSaleBills });
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
+    // Populate the product details using the Product model
+    const populatedWholeSaleBills = await WholeSaleBill.find({
+      _id: { $in: activeCollection.wholeSaleBills },
+    });
+
+    res.status(200).json({ wholeSaleBills: populatedWholeSaleBills });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching wholeSaleBills" });
@@ -72,18 +119,63 @@ exports.fetchAllWholeSaleBill = async (req, res) => {
 };
 
 exports.updateWholeSaleBill = async (req, res) => {
-  const { wholeSaleBillId } = req.params;
+  const { wholeSaleId } = req.params;
   const updatedBillData = req.body;
-  // console.log(wholeSaleBillId);
+  // console.log(wholeSaleId);
   try {
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
+
+    if (!activeCollection.wholeSaleBills.includes(wholeSaleId)) {
+      return res
+        .status(404)
+        .json({
+          message: "WholeSale Bill not found in the active collection.",
+        });
+    }
     const existingWholeSaleBill = await WholeSaleBill.findById(
-      String(wholeSaleBillId)
+      String(wholeSaleId)
     );
 
     if (!existingWholeSaleBill) {
       return res.status(404).json({ message: "WholeSale Bill not found" });
     }
+    if (existingWholeSaleBill.mobileNumber !== updatedBillData.mobileNumber) {
+      // Check if a client with the given mobile number already exists
+      let client = await Client.findOne({
+        mobileNumber: updatedBillData.mobileNumber,
+      });
 
+      if (!client) {
+        client = new Client({
+          collectionId: activeCollection._id, // Set your desired value
+          mobileNumber: updatedBillData.mobileNumber,
+          name: updatedBillData.name,
+          address: updatedBillData.address,
+        });
+
+        await client.save();
+      }
+      // Add newRetailBill._id to the wholeSaleBills array of the corresponding client
+      client.wholeSaleBills.push(wholeSaleId);
+      await client.save();
+      updatedBillData.clientId = client._id;
+
+      // Check if a client with the given mobile number already exists
+      let wrongClient = await Client.findOne({
+        mobileNumber: existingWholeSaleBill.mobileNumber,
+      });
+      if (wrongClient) {
+        // Remove retailBill id from the wrong client's retailBills array
+        wrongClient.wholeSaleBills = wrongClient.wholeSaleBills.filter(
+          (billId) => billId.toString() !== wholeSaleId
+        );
+        await wrongClient.save();
+      }
+    }
     const prevProducts = existingWholeSaleBill.products;
     const newProducts = updatedBillData.products;
 
@@ -136,15 +228,17 @@ exports.updateWholeSaleBill = async (req, res) => {
 
     // Update the retail bill with new data
     const updatedWholeSaleBill = await WholeSaleBill.findByIdAndUpdate(
-      wholeSaleBillId,
+      wholeSaleId,
       updatedBillData,
       { new: true }
     );
 
-    res.status(200).json({
-      message: "WholeSale Bill updated successfully",
-      updatedWholeSaleBill,
-    });
+    res
+      .status(200)
+      .json({
+        message: "WholeSale Bill updated successfully",
+        updatedWholeSaleBill,
+      });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error updating WholeSale Bill" });

@@ -1,19 +1,19 @@
 const express = require("express");
+
 const {
   wholeSaleBillCreate,
-  fetchAllWholeSaleBill,
+  fetchAllWholeSaleBills,
   updateWholeSaleBill,
 } = require("../controllers/wholeSaleBIllController");
-
 const router = express.Router();
 
-// Create Retail Bill
-router.post("/create-wholeSaleBill", wholeSaleBillCreate);
+// Create WholeSale Bill
+router.post("/", wholeSaleBillCreate);
 
-// Fetch All Retail BIll
-router.get("/fetch-allWholeSaleBills", fetchAllWholeSaleBill);
+// Fetch All WholeSale BIll
+router.get("/", fetchAllWholeSaleBills);
 
-// Update Retail BIll
-router.put("/update-wholeSaleBill/:wholeSaleBillId", updateWholeSaleBill);
+// Update WholeSale BIll
+router.put("/:wholeSaleId", updateWholeSaleBill);
 
 module.exports = router;
