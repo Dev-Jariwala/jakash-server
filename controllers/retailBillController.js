@@ -2,6 +2,11 @@ const Product = require("../models/productSchema");
 const RetailBill = require("../models/retailbillSchema");
 const CollectionModel = require("../models/collectionSchema");
 const Client = require("../models/clientSchema");
+const twilio = require("twilio");
+const accountSid = process.env.TWILIOSID;
+const authToken = process.env.TWILIOTOKEN;
+const twilioClient = twilio(accountSid, authToken);
+
 // Helper function to get the active collection
 const getActiveCollection = async () => {
   try {
@@ -92,6 +97,16 @@ exports.retailBIllCreate = async (req, res) => {
     // Add newRetailBill._id to the retailBills array of the corresponding client
     client.retailBills.push(newRetailBill._id);
     await client.save();
+    // Format bill details for SMS
+    if (mobileNumber === 7990176865) {
+      const message = `
+      Hello ${name}, Payment of ${advance}rs for Bill No. ${BillNo} collected. Order ready on ${deliveryDate}. Thank you, Jakkash.`;
+      await twilioClient.messages.create({
+        body: message,
+        to: `+91${mobileNumber}`, // Include the country code
+        from: "+18159164533",
+      });
+    }
     res.status(200).json({ message: "RetailBill created successfully." });
   } catch (error) {
     console.error(error);

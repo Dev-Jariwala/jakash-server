@@ -2,6 +2,10 @@ const Product = require("../models/productSchema");
 const CollectionModel = require("../models/collectionSchema");
 const Client = require("../models/clientSchema");
 const WholeSaleBill = require("../models/wholesalebillSchema");
+const twilio = require("twilio");
+const accountSid = process.env.TWILIOSID;
+const authToken = process.env.TWILIOTOKEN;
+const twilioClient = twilio(accountSid, authToken);
 // Helper function to get the active collection
 const getActiveCollection = async () => {
   try {
@@ -91,6 +95,16 @@ exports.wholeSaleBillCreate = async (req, res) => {
     // Add newWholeSaleBill._id to the wholeSaleBills array of the corresponding client
     client.wholeSaleBills.push(newWholeSaleBill._id);
     await client.save();
+    // Format bill details for SMS
+    if (mobileNumber === 7990176865) {
+      const message = `
+      Hello ${name}, Payment of ${advance}rs for Bill No. ${BillNo} collected. Order ready on ${deliveryDate}. Thank you, Jakkash.`;
+      await twilioClient.messages.create({
+        body: message,
+        to: `+91${mobileNumber}`, // Include the country code
+        from: "+18159164533",
+      });
+    }
     res.status(200).json({ message: "WholeSaleBill created successfully." });
   } catch (error) {
     console.error(error);
@@ -130,11 +144,9 @@ exports.updateWholeSaleBill = async (req, res) => {
     }
 
     if (!activeCollection.wholeSaleBills.includes(wholeSaleId)) {
-      return res
-        .status(404)
-        .json({
-          message: "WholeSale Bill not found in the active collection.",
-        });
+      return res.status(404).json({
+        message: "WholeSale Bill not found in the active collection.",
+      });
     }
     const existingWholeSaleBill = await WholeSaleBill.findById(
       String(wholeSaleId)
@@ -233,12 +245,10 @@ exports.updateWholeSaleBill = async (req, res) => {
       { new: true }
     );
 
-    res
-      .status(200)
-      .json({
-        message: "WholeSale Bill updated successfully",
-        updatedWholeSaleBill,
-      });
+    res.status(200).json({
+      message: "WholeSale Bill updated successfully",
+      updatedWholeSaleBill,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error updating WholeSale Bill" });

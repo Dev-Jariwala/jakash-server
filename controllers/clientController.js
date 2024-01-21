@@ -1,5 +1,6 @@
 const Client = require("../models/clientSchema");
 const RetailBill = require("../models/retailbillSchema");
+const WholeSaleBill = require("../models/wholesalebillSchema");
 // Helper function to get the active collection
 const getActiveCollection = async () => {
   try {
@@ -21,12 +22,18 @@ exports.fetchAllClients = async (req, res) => {
       const populatedRetailBills = await RetailBill.find({
         _id: { $in: client.retailBills },
       });
+      const populatedWholeSaleBills = await WholeSaleBill.find({
+        _id: { $in: client.wholeSaleBills },
+      });
 
       const retailDebt = populatedRetailBills.reduce((acc, curr) => {
         return acc + curr.totalDue;
       }, 0);
+      const wholeSaleDebt = populatedWholeSaleBills.reduce((acc, curr) => {
+        return acc + curr.totalDue;
+      }, 0);
 
-      return { ...client.toObject(), retailDebt };
+      return { ...client.toObject(), retailDebt, wholeSaleDebt };
     };
 
     // Use Promise.all to wait for all promises to resolve
