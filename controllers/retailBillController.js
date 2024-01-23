@@ -98,7 +98,7 @@ exports.retailBIllCreate = async (req, res) => {
     client.retailBills.push(newRetailBill._id);
     await client.save();
     // Format bill details for SMS
-    if (mobileNumber === 7990176865) {
+    if (mobileNumber === "dev") {
       const message = `
       Hello ${name}, Payment of ${advance}rs for Bill No. ${BillNo} collected. Order ready on ${deliveryDate}. Thank you, Jakkash.`;
       await twilioClient.messages.create({
