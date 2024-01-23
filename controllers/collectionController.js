@@ -3,11 +3,32 @@ const Product = require("../models/productSchema");
 const Stock = require("../models/stockSchema");
 const RetailBill = require("../models/retailbillSchema");
 const WholeSaleBill = require("../models/wholesalebillSchema");
+// Helper function to get the active collection
+const getActiveCollection = async () => {
+  try {
+    const activeCollection = await CollectionModel.findOne({ active: true });
+    return activeCollection;
+  } catch (error) {
+    console.error(error);
+    throw new Error("Error fetching active collection");
+  }
+};
+
+// Create a new collection with empty arrays
 // Create a new collection with empty arrays
 exports.createCollection = async (req, res) => {
-  const { collectionName } = req.body;
+  const { collectionName, addProducts } = req.body;
 
   try {
+    // Check if the collectionName already exists
+    const existingCollection = await CollectionModel.findOne({
+      collectionName,
+    });
+
+    if (existingCollection) {
+      return res.status(400).json({ message: "repeteColl" });
+    }
+    // Create a new collection with empty arrays
     const newCollection = new CollectionModel({
       collectionName,
       products: [],
@@ -16,7 +37,37 @@ exports.createCollection = async (req, res) => {
       wholeSaleBills: [],
     });
 
+    // If addProducts is true, add all products from the active collection to the new collection
+    if (addProducts) {
+      const activeCollection = await getActiveCollection();
+
+      if (activeCollection) {
+        // Fetch all products in the active collection
+        const activeCollectionProducts = await Product.find({
+          _id: { $in: activeCollection.products },
+        });
+
+        // Add each product to the products array of the new collection
+        activeCollectionProducts.forEach((product) => {
+          const newProduct = new Product({
+            collectionId: newCollection._id,
+            productName: product.productName,
+            retailPrice: product.retailPrice,
+            wholesalePrice: product.wholesalePrice,
+            stock: 0,
+            totalStock: 0,
+          });
+
+          // Save the new product and add its ID to the products array of the new collection
+          newProduct.save();
+          newCollection.products.push(newProduct._id);
+        });
+      }
+    }
+
+    // Save the new collection
     await newCollection.save();
+
     res.status(201).json({ message: "Collection created successfully." });
   } catch (error) {
     console.error(error);
