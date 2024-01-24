@@ -1,5 +1,6 @@
 const CollectionModel = require("../models/collectionSchema");
 const Product = require("../models/productSchema");
+const Stock = require("../models/stockSchema");
 
 // Helper function to get the active collection
 const getActiveCollection = async () => {
@@ -131,7 +132,7 @@ exports.productDelete = async (req, res) => {
     );
 
     await activeCollection.save();
-
+    await Stock.deleteMany({ productId });
     // Delete the actual product document from the Product model
     await Product.findByIdAndDelete(productId);
 
