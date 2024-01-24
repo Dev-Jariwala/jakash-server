@@ -33,6 +33,7 @@ exports.productCreate = async (req, res) => {
       wholesalePrice,
       stock: 0,
       totalStock: 0,
+      muted: false,
     });
 
     await newProduct.save();
@@ -104,6 +105,44 @@ exports.productUpdate = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error updating product" });
+  }
+};
+// Update product details by ID
+exports.productMute = async (req, res) => {
+  const { productId } = req.params;
+  const { muted } = req.body;
+  console.log(muted);
+  try {
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
+
+    if (!activeCollection.products.includes(productId)) {
+      return res
+        .status(404)
+        .json({ message: "Product not found in the active collection." });
+    }
+
+    // Use $set for updating specific fields
+    const mutedProduct = await Product.findByIdAndUpdate(
+      productId,
+      {
+        $set: {
+          muted,
+        },
+      },
+      { new: true }
+    ).lean(); // Use lean for a plain JavaScript object instead of Mongoose document
+
+    res.json({
+      message: `${mutedProduct.productName} ${muted ? "Muted" : "UnMuted"}.`,
+      mutedProduct,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error muting product" });
   }
 };
 
