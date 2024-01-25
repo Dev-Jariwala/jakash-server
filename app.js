@@ -7,6 +7,7 @@ const wholeSaleBillRoutes = require("./routes/wholeSaleBill");
 const stockRoutes = require("./routes/stock");
 const collectionRoutes = require("./routes/collection");
 const clientRoutes = require("./routes/client");
+const purchaseRoutes = require("./routes/purchase");
 const cors = require("cors");
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/stock", stockRoutes);
 app.use("/api/wholesale", wholeSaleBillRoutes);
 app.use("/api/collection", collectionRoutes);
 app.use("/api/client", clientRoutes);
+app.use("/api/purchase", purchaseRoutes);
 app.get("/", (req, res) => {
   res.send("listining from other side");
 });

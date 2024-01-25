@@ -16,6 +16,7 @@ const collectionSchema = new mongoose.Schema({
   wholeSaleBills: [
     { type: mongoose.Schema.Types.ObjectId, ref: "WholeSaleBill" },
   ],
+  purchases: [{ type: mongoose.Schema.Types.ObjectId, ref: "Purchase" }],
 });
 
 const CollectionModel = mongoose.model("Collection", collectionSchema);

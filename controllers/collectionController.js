@@ -3,6 +3,7 @@ const Product = require("../models/productSchema");
 const Stock = require("../models/stockSchema");
 const RetailBill = require("../models/retailbillSchema");
 const WholeSaleBill = require("../models/wholesalebillSchema");
+const Purchase = require("../models/purchaseSchema");
 // Helper function to get the active collection
 const getActiveCollection = async () => {
   try {
@@ -35,6 +36,7 @@ exports.createCollection = async (req, res) => {
       stocks: [],
       retailBills: [],
       wholeSaleBills: [],
+      purchases: [],
     });
 
     // If addProducts is true, add all products from the active collection to the new collection
@@ -178,6 +180,7 @@ exports.collectionDelete = async (req, res) => {
       await Stock.deleteMany({ collectionId });
       await RetailBill.deleteMany({ collectionId });
       await WholeSaleBill.deleteMany({ collectionId });
+      await Purchase.deleteMany({ collectionId });
 
       // Delete the collection
       await CollectionModel.findByIdAndDelete(collectionId);

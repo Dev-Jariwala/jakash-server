@@ -1,5 +1,6 @@
 const CollectionModel = require("../models/collectionSchema");
 const Product = require("../models/productSchema");
+const Purchase = require("../models/purchaseSchema");
 const Stock = require("../models/stockSchema");
 
 // Helper function to get the active collection
@@ -14,8 +15,9 @@ const getActiveCollection = async () => {
 };
 
 // Create product
-exports.productCreate = async (req, res) => {
-  const { productName, retailPrice, wholesalePrice } = req.body;
+exports.purchaseCreate = async (req, res) => {
+  const { date, invoiceNo, supplierName, itemDescription, quantity, rate } =
+    req.body;
 
   try {
     // Fetch the active collection
@@ -25,32 +27,32 @@ exports.productCreate = async (req, res) => {
       return res.status(400).json({ message: "No active collection" });
     }
 
-    // Creating a new product
-    const newProduct = new Product({
+    // Creating a new purchase
+    const newPurchase = new Purchase({
       collectionId: activeCollection._id,
-      productName,
-      retailPrice,
-      wholesalePrice,
-      stock: 0,
-      totalStock: 0,
-      muted: false,
+      date,
+      invoiceNo,
+      supplierName,
+      itemDescription,
+      quantity,
+      rate,
     });
 
-    await newProduct.save();
+    await newPurchase.save();
 
-    // Store only the productId in the products array of the active collection
-    activeCollection.products.push(newProduct._id);
+    // Store only the purchaseId in the purchases array of the active collection
+    activeCollection.purchases.push(newPurchase._id);
     await activeCollection.save();
 
-    res.status(201).json({ message: "Product created successfully." });
+    res.status(201).json({ message: "Purchase created successfully." });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error creating product." });
+    res.status(500).json({ message: "Error creating purchase." });
   }
 };
 
-// Fetch all products in the active collection
-exports.fetchAllProducts = async (req, res) => {
+// Fetch all purchases in the active collection
+exports.fetchAllPurchases = async (req, res) => {
   try {
     const activeCollection = await getActiveCollection();
 
@@ -59,21 +61,22 @@ exports.fetchAllProducts = async (req, res) => {
     }
 
     // Populate the product details using the Product model
-    const populatedProducts = await Product.find({
-      _id: { $in: activeCollection.products },
+    const populatedPurchases = await Purchase.find({
+      _id: { $in: activeCollection.purchases },
     });
 
-    res.status(200).json({ products: populatedProducts });
+    res.status(200).json({ purchases: populatedPurchases });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error fetching products" });
+    res.status(500).json({ message: "Error fetching purchases" });
   }
 };
 
 // Update product details by ID
-exports.productUpdate = async (req, res) => {
-  const { productId } = req.params;
-  const { productName, retailPrice, wholesalePrice } = req.body;
+exports.purchaseUpdate = async (req, res) => {
+  const { purchaseId } = req.params;
+  const { date, invoiceNo, supplierName, itemDescription, rate, quantity } =
+    req.body;
 
   try {
     const activeCollection = await getActiveCollection();
@@ -82,72 +85,38 @@ exports.productUpdate = async (req, res) => {
       return res.status(400).json({ message: "No active collection" });
     }
 
-    if (!activeCollection.products.includes(productId)) {
+    if (!activeCollection.purchases.includes(purchaseId)) {
       return res
         .status(404)
-        .json({ message: "Product not found in the active collection." });
+        .json({ message: "Purchase not found in the active collection." });
     }
 
     // Use $set for updating specific fields
-    const updatedProduct = await Product.findByIdAndUpdate(
-      productId,
+    const updatedPurchase = await Purchase.findByIdAndUpdate(
+      purchaseId,
       {
         $set: {
-          productName,
-          retailPrice,
-          wholesalePrice,
+          date,
+          invoiceNo,
+          supplierName,
+          itemDescription,
+          rate,
+          quantity,
         },
       },
       { new: true }
     ).lean(); // Use lean for a plain JavaScript object instead of Mongoose document
 
-    res.json({ message: "Product updated successfully.", updatedProduct });
+    res.json({ message: "Purchase updated successfully.", updatedPurchase });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error updating product" });
-  }
-};
-// Update product details by ID
-exports.productMute = async (req, res) => {
-  const { productId } = req.params;
-  const { muted } = req.body;
-  try {
-    const activeCollection = await getActiveCollection();
-
-    if (!activeCollection) {
-      return res.status(400).json({ message: "No active collection" });
-    }
-
-    if (!activeCollection.products.includes(productId)) {
-      return res
-        .status(404)
-        .json({ message: "Product not found in the active collection." });
-    }
-
-    // Use $set for updating specific fields
-    const mutedProduct = await Product.findByIdAndUpdate(
-      productId,
-      {
-        $set: {
-          muted,
-        },
-      },
-      { new: true }
-    ).lean(); // Use lean for a plain JavaScript object instead of Mongoose document
-
-    res.json({
-      message: `${mutedProduct.productName} ${muted ? "Muted" : "UnMuted"}.`,
-      mutedProduct,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error muting product" });
+    res.status(500).json({ message: "Error updating Purchase" });
   }
 };
 
 // Delete a product by ID
-exports.productDelete = async (req, res) => {
-  const { productId } = req.params;
+exports.purchaseDelete = async (req, res) => {
+  const { purchaseId } = req.params;
 
   try {
     const activeCollection = await getActiveCollection();
@@ -158,26 +127,25 @@ exports.productDelete = async (req, res) => {
     }
 
     // Check if the product exists in the active collection
-    if (!activeCollection.products.includes(productId)) {
+    if (!activeCollection.purchases.includes(purchaseId)) {
       return res
         .status(404)
-        .json({ message: "Product not found in the active collection." });
+        .json({ message: "Purchase not found in the active collection." });
     }
 
     // Remove the product from the active collection's products array
-    activeCollection.products = activeCollection.products.filter(
-      (product) => product.toString() !== productId
+    activeCollection.purchases = activeCollection.purchases.filter(
+      (purchase) => purchase.toString() !== purchaseId
     );
 
     await activeCollection.save();
-    await Stock.deleteMany({ productId });
     // Delete the actual product document from the Product model
-    await Product.findByIdAndDelete(productId);
+    await Purchase.findByIdAndDelete(purchaseId);
 
-    res.status(200).json({ message: "Product deleted successfully." });
+    res.status(200).json({ message: "Purchase deleted successfully." });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error deleting product" });
+    res.status(500).json({ message: "Error deleting purchase" });
   }
 };
 
