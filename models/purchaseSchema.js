@@ -9,7 +9,7 @@ const purchaseSchema = new mongoose.Schema({
     type: Date,
     default: Date.now(),
   },
-  invoiceNo: { type: Number },
+  invoiceNo: { type: String },
   supplierName: String,
   itemDescription: String,
   rate: {
