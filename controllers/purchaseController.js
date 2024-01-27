@@ -65,7 +65,7 @@ exports.fetchAllPurchases = async (req, res) => {
       _id: { $in: activeCollection.purchases },
     });
 
-    res.status(200).json({ purchases: populatedPurchases });
+    res.status(200).json({ purchases: populatedPurchases.reverse() });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching purchases" });
