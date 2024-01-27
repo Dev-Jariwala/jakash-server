@@ -6,6 +6,7 @@ const {
   productDelete,
   fetchProductDetails,
   productMute,
+  getProductSales,
 } = require("../controllers/productControllers");
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.post("/", productCreate);
 
 // Fetch All courses Route
 router.get("/", fetchAllProducts);
+router.get("/productSales", getProductSales);
 
 // Update course Route
 router.put("/:productId", productUpdate);

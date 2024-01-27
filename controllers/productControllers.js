@@ -1,7 +1,8 @@
 const CollectionModel = require("../models/collectionSchema");
 const Product = require("../models/productSchema");
 const Stock = require("../models/stockSchema");
-
+const RetailBill = require("../models/retailbillSchema");
+const WholeSaleBill = require("../models/wholesalebillSchema");
 // Helper function to get the active collection
 const getActiveCollection = async () => {
   try {
@@ -211,5 +212,71 @@ exports.fetchProductDetails = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching product details" });
+  }
+};
+
+// Controller function to get the number of each product sold in each retail and wholesale bill for the active collection
+exports.getProductSales = async (req, res) => {
+  try {
+    // Fetch active collection
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
+
+    // Fetch retail bills for the active collection
+    const retailBills = await RetailBill.find({
+      collectionId: activeCollection._id,
+    });
+
+    // Fetch wholesale bills for the active collection
+    const wholesaleBills = await WholeSaleBill.find({
+      collectionId: activeCollection._id,
+    });
+
+    // Initialize an array to store product sales data
+    const productSalesData = [];
+
+    // Function to update product sales data based on bill items
+    const updateProductSales = (billItems, billType) => {
+      billItems.forEach((item) => {
+        const productId = item.productId.toString();
+        const quantity = item.quantity;
+
+        const existingProduct = productSalesData.find(
+          (entry) => entry.productId === productId
+        );
+
+        if (existingProduct) {
+          // Update existing entry
+          existingProduct[billType] += quantity;
+        } else {
+          // Add new entry
+          productSalesData.push({
+            productId,
+            retail: billType === "retail" ? quantity : 0,
+            wholesale: billType === "wholesale" ? quantity : 0,
+          });
+        }
+      });
+    };
+
+    // Update product sales data for retail bills
+    retailBills.forEach((retailBill) => {
+      updateProductSales(retailBill.products, "retail");
+    });
+
+    // Update product sales data for wholesale bills
+    wholesaleBills.forEach((wholesaleBill) => {
+      updateProductSales(wholesaleBill.products, "wholesale");
+    });
+
+    res.status(200).json({ productSalesData });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Error fetching product sales data for the active collection",
+    });
   }
 };
