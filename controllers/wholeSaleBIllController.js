@@ -254,3 +254,46 @@ exports.updateWholeSaleBill = async (req, res) => {
     res.status(500).json({ message: "Error updating WholeSale Bill" });
   }
 };
+exports.updateTotalDue = async (req, res) => {
+  const { wholeSaleId } = req.params;
+  // console.log(wholeSaleId);
+  try {
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
+
+    if (!activeCollection.wholeSaleBills.includes(wholeSaleId)) {
+      return res.status(404).json({
+        message: "Wholesale Bill not found in the active collection.",
+      });
+    }
+    const existingWholeSaleBill = await WholeSaleBill.findById(
+      String(wholeSaleId)
+    );
+
+    if (!existingWholeSaleBill) {
+      return res.status(404).json({ message: "WholeSale Bill not found" });
+    }
+
+    // Update the retail bill with new data
+    const updatedWholeSaleBill = await WholeSaleBill.findByIdAndUpdate(
+      wholeSaleId,
+      {
+        $set: {
+          paid: existingWholeSaleBill.paid + existingWholeSaleBill.totalDue,
+          totalDue: 0,
+        },
+      },
+      { new: true }
+    );
+
+    res
+      .status(200)
+      .json({ message: "Bill Paid successfully", updatedWholeSaleBill });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error Paying Bill" });
+  }
+};

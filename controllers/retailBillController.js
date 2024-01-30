@@ -253,3 +253,44 @@ exports.updateRetailBill = async (req, res) => {
     res.status(500).json({ message: "Error updating Retail Bill" });
   }
 };
+exports.updateTotalDue = async (req, res) => {
+  const { retailBillId } = req.params;
+  // console.log(retailBillId);
+  try {
+    const activeCollection = await getActiveCollection();
+
+    if (!activeCollection) {
+      return res.status(400).json({ message: "No active collection" });
+    }
+
+    if (!activeCollection.retailBills.includes(retailBillId)) {
+      return res
+        .status(404)
+        .json({ message: "Retail Bill not found in the active collection." });
+    }
+    const existingRetailBill = await RetailBill.findById(String(retailBillId));
+
+    if (!existingRetailBill) {
+      return res.status(404).json({ message: "Retail Bill not found" });
+    }
+
+    // Update the retail bill with new data
+    const updatedRetailBill = await RetailBill.findByIdAndUpdate(
+      retailBillId,
+      {
+        $set: {
+          paid: existingRetailBill.paid + existingRetailBill.totalDue,
+          totalDue: 0,
+        },
+      },
+      { new: true }
+    );
+
+    res
+      .status(200)
+      .json({ message: "Bill Paid successfully", updatedRetailBill });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error Paying Bill" });
+  }
+};

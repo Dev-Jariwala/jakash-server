@@ -40,6 +40,10 @@ const wholeSaleBillSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  paid: {
+    type: Number,
+    default: 0,
+  },
   totalDue: {
     type: Number,
     default: function () {
