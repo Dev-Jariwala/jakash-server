@@ -54,8 +54,8 @@ exports.createCollection = async (req, res) => {
           const newProduct = new Product({
             collectionId: newCollection._id,
             productName: product.productName,
-            retailPrice: product.retailPrice,
-            wholesalePrice: product.wholesalePrice,
+            retailPrice: 0,
+            wholesalePrice: 0,
             stock: 0,
             totalStock: 0,
           });
