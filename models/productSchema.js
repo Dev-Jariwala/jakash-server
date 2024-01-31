@@ -20,6 +20,10 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isLabour: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const Product = mongoose.model("Product", productSchema);

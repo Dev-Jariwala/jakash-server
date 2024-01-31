@@ -16,7 +16,7 @@ const getActiveCollection = async () => {
 
 // Create product
 exports.productCreate = async (req, res) => {
-  const { productName, retailPrice, wholesalePrice } = req.body;
+  const { productName, retailPrice, wholesalePrice, isLabour } = req.body;
 
   try {
     // Fetch the active collection
@@ -35,6 +35,7 @@ exports.productCreate = async (req, res) => {
       stock: 0,
       totalStock: 0,
       muted: false,
+      isLabour,
     });
 
     await newProduct.save();
@@ -74,7 +75,7 @@ exports.fetchAllProducts = async (req, res) => {
 // Update product details by ID
 exports.productUpdate = async (req, res) => {
   const { productId } = req.params;
-  const { productName, retailPrice, wholesalePrice } = req.body;
+  const { productName, retailPrice, wholesalePrice, isLabour } = req.body;
 
   try {
     const activeCollection = await getActiveCollection();
@@ -97,6 +98,7 @@ exports.productUpdate = async (req, res) => {
           productName,
           retailPrice,
           wholesalePrice,
+          isLabour,
         },
       },
       { new: true }

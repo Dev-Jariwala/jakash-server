@@ -79,7 +79,7 @@ exports.retailBIllCreate = async (req, res) => {
       const { productId, quantity } = productItem;
       const product = await Product.findById(productId);
 
-      if (product) {
+      if (product && !product.isLabour) {
         // Calculate new stock after retail bill creation
         const updatedStock = product.stock - quantity;
 
@@ -210,7 +210,7 @@ exports.updateRetailBill = async (req, res) => {
     // Handle products to be removed: Increment stock for removed products
     for (const productToRemove of productsToRemove) {
       const product = await Product.findById(productToRemove.productId);
-      if (product) {
+      if (product && !product.isLabour) {
         product.stock += productToRemove.quantity;
         await product.save();
       }
@@ -221,7 +221,7 @@ exports.updateRetailBill = async (req, res) => {
       const { productId, quantity } = productToUpdate;
       const product = await Product.findById(productId);
 
-      if (product) {
+      if (product && !product.isLabour) {
         if (
           !existingRetailBill.products.some((p) => p.productId === productId)
         ) {
