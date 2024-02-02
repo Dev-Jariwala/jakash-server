@@ -50,6 +50,9 @@ const wholeSaleBillSchema = new mongoose.Schema({
       return this.subTotal - this.discount - this.advance;
     },
   },
+  notes: {
+    type: String,
+  },
 });
 
 const WholeSaleBill = mongoose.model("WholeSaleBill", wholeSaleBillSchema);

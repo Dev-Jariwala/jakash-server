@@ -31,6 +31,7 @@ exports.wholeSaleBillCreate = async (req, res) => {
     discount,
     advance,
     totalDue,
+    notes,
   } = req.body;
 
   try {
@@ -70,6 +71,7 @@ exports.wholeSaleBillCreate = async (req, res) => {
       discount,
       advance,
       totalDue,
+      notes,
     });
 
     // Update product stock based on wholesale bill

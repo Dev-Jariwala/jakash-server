@@ -32,10 +32,10 @@ exports.retailBIllCreate = async (req, res) => {
     discount,
     advance,
     totalDue,
+    notes,
   } = req.body;
 
   try {
-    console.log(BillNo);
     // Fetch the active collection
     const activeCollection = await getActiveCollection();
 
@@ -56,6 +56,7 @@ exports.retailBIllCreate = async (req, res) => {
       await client.save();
     }
     const filteredProducts = products.filter((product) => product.quantity > 0);
+    console.log(filteredProducts);
     // Creating a new retail bill
     const newRetailBill = new RetailBill({
       collectionId: activeCollection._id,
@@ -72,6 +73,7 @@ exports.retailBIllCreate = async (req, res) => {
       discount,
       advance,
       totalDue,
+      notes,
     });
 
     // Update product stock based on retail bill

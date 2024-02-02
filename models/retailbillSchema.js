@@ -54,6 +54,9 @@ const retailBillSchema = new mongoose.Schema({
       return this.subTotal - this.discount - this.advance;
     },
   },
+  notes: {
+    type: String,
+  },
 });
 
 const RetailBill = mongoose.model("RetailBill", retailBillSchema);
